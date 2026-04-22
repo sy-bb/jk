@@ -2,221 +2,455 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>矿场监控中心</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#070d14;--bg1:#0b1520;--bg2:#0f1e2d;--bg3:#152638;
-  --border:rgba(0,200,120,.1);--border2:rgba(0,200,120,.22);
-  --green:#00e87a;--green2:#00ff88;--gd:rgba(0,232,122,.14);
-  --amber:#ffaa00;--ad:rgba(255,170,0,.14);
-  --red:#ff4455;--rd:rgba(255,68,85,.14);
+  --bg:#060c13;--bg1:#0b1520;--bg2:#0f1e2d;--bg3:#152638;
+  --border:rgba(0,200,120,.1);--b2:rgba(0,200,120,.22);
+  --green:#00e87a;--g2:#00ff88;--gd:rgba(0,232,122,.13);
+  --amber:#ffaa00;--ad:rgba(255,170,0,.13);
+  --red:#ff4455;--rd:rgba(255,68,85,.13);
   --blue:#38aaff;--bd:rgba(56,170,255,.12);
-  --text:#c8e8d8;--text2:#6a9e82;--text3:#3a6a52;
+  --text:#c8e8d8;--t2:#6a9e82;--t3:#3a6a52;
   --mono:'JetBrains Mono','Consolas',monospace;--r:6px;
 }
 html,body{height:100%}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;font-size:13px;line-height:1.5;min-height:100vh;background-image:linear-gradient(rgba(0,232,122,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(0,232,122,.018) 1px,transparent 1px);background-size:36px 36px}
-::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
-#login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-.login-box{width:380px;background:var(--bg1);border:1px solid var(--border2);border-radius:12px;padding:36px 32px}
-.login-logo{text-align:center;margin-bottom:6px}
-.login-logo-dot{width:10px;height:10px;border-radius:50%;background:var(--green2);box-shadow:0 0 16px var(--green2);display:inline-block;margin-right:8px;animation:pulse 2s infinite}
-.login-logo-text{font-size:18px;font-weight:700;color:var(--green2);letter-spacing:.06em}
-.login-sub{color:var(--text3);font-size:12px;text-align:center;margin-top:4px;margin-bottom:28px}
-.lbl{font-size:11px;color:var(--text2);margin-bottom:4px;display:block}
-.inp{width:100%;padding:9px 12px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);font-size:13px;outline:none;transition:border .15s;margin-bottom:14px}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  font-size:13px;line-height:1.5;min-height:100vh;
+  background-image:linear-gradient(rgba(0,232,122,.015) 1px,transparent 1px),linear-gradient(90deg,rgba(0,232,122,.015) 1px,transparent 1px);
+  background-size:40px 40px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* LOGIN */
+#pg-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+.lbox{width:400px;background:var(--bg1);border:1px solid var(--b2);border-radius:12px;padding:36px 30px}
+.llogo{display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:5px}
+.ldot{width:10px;height:10px;border-radius:50%;background:var(--g2);box-shadow:0 0 14px var(--g2);animation:pulse 2s infinite}
+.ltxt{font-size:17px;font-weight:700;color:var(--g2);letter-spacing:.06em}
+.lsub{text-align:center;color:var(--t3);font-size:12px;margin-bottom:24px}
+.inp{width:100%;padding:9px 12px;background:var(--bg2);border:1px solid var(--b2);border-radius:var(--r);
+  color:var(--text);font-size:13px;outline:none;transition:border .15s;margin-bottom:10px}
 .inp:focus{border-color:var(--green)}
-.btn-login{width:100%;padding:10px;background:var(--green);border:none;border-radius:var(--r);color:#000;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.04em}
-.btn-login:hover{background:var(--green2)}
-.btn-login:disabled{opacity:.5;cursor:default}
-.login-err{color:var(--red);font-size:12px;text-align:center;margin-top:10px;display:none}
-#app{display:none}
-.hdr{position:sticky;top:0;z-index:100;background:rgba(7,13,20,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--border2);padding:0 20px;height:54px;display:flex;align-items:center;gap:16px}
-.hdr-logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:var(--green2);white-space:nowrap}
-.hdr-logo::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--green2);box-shadow:0 0 10px var(--green2);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-.hdr-sep{width:1px;height:26px;background:var(--border2)}
-.hdr-kpi{display:flex;flex-direction:column;gap:1px}
-.hdr-kpi-l{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase}
-.hdr-kpi-v{font-size:13px;font-weight:700;font-family:var(--mono)}
-.hdr-r{margin-left:auto;display:flex;align-items:center;gap:10px}
-.btn{padding:5px 12px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg2);color:var(--text);font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+select.inp{cursor:pointer}
+.lbl{font-size:11px;color:var(--t2);display:block;margin-bottom:4px}
+.btn-lg{width:100%;padding:10px;background:var(--green);border:none;border-radius:var(--r);
+  color:#000;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-lg:hover{background:var(--g2)}.btn-lg:disabled{opacity:.5;cursor:default}
+.lerr{color:var(--red);font-size:12px;text-align:center;margin-top:8px;display:none}
+.ltab{display:flex;border-bottom:1px solid var(--border);margin-bottom:18px}
+.ltab-btn{flex:1;padding:8px;background:none;border:none;color:var(--t2);font-size:13px;cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.ltab-btn.on{color:var(--green);border-bottom-color:var(--green)}
+
+/* APP */
+#pg-app{display:none;flex-direction:column;min-height:100vh}
+#pg-app.on{display:flex}
+.hdr{position:sticky;top:0;z-index:100;background:rgba(6,12,19,.95);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--b2);padding:0 18px;height:52px;display:flex;align-items:center;gap:12px}
+.hlogo{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--g2);white-space:nowrap}
+.hlogo::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--g2);box-shadow:0 0 10px var(--g2);animation:pulse 2s infinite}
+.hsep{width:1px;height:24px;background:var(--b2)}
+.hkpi{display:flex;flex-direction:column;gap:1px}
+.hkl{font-size:9px;color:var(--t3);letter-spacing:.1em;text-transform:uppercase}
+.hkv{font-size:12px;font-weight:700;font-family:var(--mono)}
+.hr{margin-left:auto;display:flex;align-items:center;gap:8px}
+.btn{padding:4px 11px;border:1px solid var(--b2);border-radius:var(--r);background:var(--bg2);
+  color:var(--text);font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
 .btn:hover{border-color:var(--green);color:var(--green)}
-.btn-red{border-color:var(--red);color:var(--red)}.btn-red:hover{background:var(--rd)}
-.btn-amber{border-color:var(--amber);color:var(--amber)}.btn-amber:hover{background:var(--ad)}
-.btn-green{border-color:var(--green);color:var(--green)}.btn-green:hover{background:var(--gd)}
-.btn-blue{border-color:var(--blue);color:var(--blue)}.btn-blue:hover{background:var(--bd)}
-.rbtn{display:flex;align-items:center;gap:5px;padding:4px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg2);color:var(--text2);font-size:11px;cursor:pointer;transition:all .15s}
+.btn-r{border-color:var(--red);color:var(--red)}.btn-r:hover{background:var(--rd)}
+.btn-a{border-color:var(--amber);color:var(--amber)}.btn-a:hover{background:var(--ad)}
+.btn-g{border-color:var(--green);color:var(--green)}.btn-g:hover{background:var(--gd)}
+.btn-b{border-color:var(--blue);color:var(--blue)}.btn-b:hover{background:var(--bd)}
+.btn-p{background:var(--green);border-color:var(--green);color:#000;font-weight:700}.btn-p:hover{background:var(--g2)}
+.rbtn{display:flex;align-items:center;gap:4px;padding:4px 9px;border:1px solid var(--b2);border-radius:var(--r);
+  background:var(--bg2);color:var(--t2);font-size:11px;cursor:pointer;transition:all .15s}
 .rbtn:hover{border-color:var(--green);color:var(--green)}
-.rbtn.spinning .ri{animation:spin .6s linear infinite}
-.btc-live{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--blue)}
-.user-tag{font-size:11px;color:var(--text3)}
-.alert-bar{display:none;align-items:center;gap:10px;padding:7px 20px;background:rgba(255,68,85,.08);border-bottom:1px solid rgba(255,68,85,.3);font-size:12px;color:var(--red)}
-.alert-bar.on{display:flex}
-.main{padding:18px 20px;max-width:1600px;margin:0 auto}
-.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}
-.sc{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:12px 14px;position:relative;overflow:hidden}
-.sc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--green);opacity:.25}
-.sc.warn::after{background:var(--amber)}.sc.err::after{background:var(--red);opacity:.5}
-.sl{font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
-.sv{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--green2);line-height:1}
-.sv.warn{color:var(--amber)}.sv.err{color:var(--red)}.sv.blue{color:var(--blue)}
-.ss{font-size:10px;color:var(--text2);margin-top:3px}
-.sec{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);margin-bottom:12px;display:flex;align-items:center;gap:10px}
-.sec::after{content:'';flex:1;height:1px;background:var(--border)}
-.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px;margin-bottom:24px}
-.dc{background:var(--bg1);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .2s}
-.dc:hover{border-color:var(--border2)}.dc.err-c{border-color:rgba(255,68,85,.35)}
-.dhd{padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
-.dst{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.dst.online{background:var(--green2);box-shadow:0 0 8px var(--green2)}
-.dst.offline{background:var(--red)}.dst.warning{background:var(--amber);animation:pulse 1s infinite}
-.dn{font-weight:700;font-size:13px;color:var(--text)}
-.dip{font-size:10px;color:var(--text3);font-family:var(--mono);margin-left:auto}
-.dut{font-size:10px;color:var(--text3);margin-left:6px}
-.dmets{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border)}
-.dmet{background:var(--bg1);padding:9px 12px}
-.dml{font-size:9px;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:3px}
-.dmv{font-size:13px;font-weight:700;font-family:var(--mono);color:var(--text)}
-.dmv.g{color:var(--green2)}.dmv.a{color:var(--amber)}.dmv.r{color:var(--red)}
-.dpool{padding:8px 14px;border-top:1px solid var(--border);font-size:11px;color:var(--text2);display:flex;align-items:center;gap:8px}
+.rbtn.spin .ri{animation:spin .6s linear infinite}
+
+/* SITE BAR */
+.site-bar{background:var(--bg1);border-bottom:1px solid var(--border);padding:0 18px;
+  display:flex;align-items:center;gap:8px;height:42px;overflow-x:auto;flex-shrink:0}
+.site-chip{display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;
+  border:1px solid var(--border);background:transparent;color:var(--t2);font-size:12px;
+  cursor:pointer;transition:all .15s;white-space:nowrap}
+.site-chip.on{background:var(--gd);border-color:var(--green);color:var(--green)}
+.site-chip:hover{border-color:var(--green);color:var(--green)}
+.site-add{padding:4px 12px;border-radius:20px;border:1px dashed var(--border);
+  background:transparent;color:var(--t3);font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.site-add:hover{border-color:var(--green);color:var(--green)}
+
+/* TABS */
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg1);padding:0 18px;flex-shrink:0;flex-wrap:wrap}
+.tab{padding:9px 13px;background:none;border:none;color:var(--t2);font-size:12px;cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s}
+.tab:hover{color:var(--text)}.tab.on{color:var(--green);border-bottom-color:var(--green)}
+.abar{display:none;align-items:center;gap:8px;padding:7px 18px;
+  background:rgba(255,68,85,.07);border-bottom:1px solid rgba(255,68,85,.3);font-size:12px;color:var(--red)}
+.abar.on{display:flex}
+
+/* MAIN */
+.main{padding:16px 18px;max-width:1600px;margin:0 auto;width:100%}
+.tc{display:none}.tc.on{display:block}
+
+/* SUMMARY */
+.sum{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.sc{background:var(--bg1);border:1px solid var(--border);border-radius:8px;padding:11px 13px;position:relative;overflow:hidden}
+.sc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--green);opacity:.2}
+.sc.err::after{background:var(--red);opacity:.4}
+.sl{font-size:9px;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.sv{font-size:19px;font-weight:700;font-family:var(--mono);color:var(--g2);line-height:1}
+.sv.err{color:var(--red)}.sv.blue{color:var(--blue)}.sv.amber{color:var(--amber)}
+.ss{font-size:10px;color:var(--t2);margin-top:3px}
+
+/* DEVICES */
+.sec{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--t2);
+  margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.secl{flex:1;height:1px;background:var(--border)}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;margin-bottom:20px}
+.dc{background:var(--bg1);border:1px solid var(--border);border-radius:9px;overflow:hidden;transition:border-color .2s}
+.dc:hover{border-color:var(--b2)}.dc.ec{border-color:rgba(255,68,85,.3)}
+.dhd{padding:9px 13px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px}
+.dst{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dst.on{background:var(--g2);box-shadow:0 0 7px var(--g2)}.dst.off{background:var(--red)}
+.dname{font-weight:700;font-size:12px}.dip{font-size:10px;color:var(--t3);font-family:var(--mono);margin-left:auto}
+.dut{font-size:10px;color:var(--t3);margin-left:5px}
+.dm{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:var(--border)}
+.dmi{background:var(--bg1);padding:8px 11px}
+.dml{font-size:9px;color:var(--t3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
+.dmv{font-size:12px;font-weight:700;font-family:var(--mono)}
+.dmv.g{color:var(--g2)}.dmv.a{color:var(--amber)}.dmv.r{color:var(--red)}
+.dp{padding:7px 13px;border-top:1px solid var(--border);font-size:11px;color:var(--t2);display:flex;align-items:center;gap:7px}
 .pdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-.pname{color:var(--text);font-weight:500;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.dact{padding:8px 14px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap}
-.dact .btn{font-size:11px;padding:4px 9px}
-.clog{background:var(--bg1);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:24px}
-.clhd{padding:10px 14px;background:var(--bg2);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);display:flex;align-items:center;justify-content:space-between}
-.ctbl{width:100%;border-collapse:collapse;font-size:11px}
-.ctbl th{padding:7px 12px;text-align:left;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)}
+.pn{color:var(--text);font-weight:500;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.da{padding:7px 13px;border-top:1px solid var(--border);display:flex;gap:5px;flex-wrap:wrap}
+.da .btn{font-size:11px;padding:3px 8px}
+
+/* CARDS */
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:14px}
+.card-hd{padding:10px 13px;background:var(--bg2);border-bottom:1px solid var(--border);
+  font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--t2);
+  display:flex;align-items:center;justify-content:space-between}
+.card-body{padding:14px}
+.ctbl{width:100%;border-collapse:collapse;font-size:12px}
+.ctbl th{padding:7px 12px;text-align:left;font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border)}
 .ctbl td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text)}
-.ctbl tr:last-child td{border-bottom:none}.ctbl tr:hover td{background:rgba(0,200,120,.03)}
+.ctbl tr:last-child td{border-bottom:none}.ctbl tr:hover td{background:rgba(0,200,120,.02)}
 .sbadge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600}
-.sbadge.pending{background:var(--ad);color:var(--amber)}.sbadge.running{background:var(--bd);color:var(--blue)}.sbadge.done{background:var(--gd);color:var(--green)}.sbadge.error{background:var(--rd);color:var(--red)}
-.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
+.sbadge.pending{background:var(--ad);color:var(--amber)}.sbadge.running{background:var(--bd);color:var(--blue)}
+.sbadge.done{background:var(--gd);color:var(--green)}.sbadge.error{background:var(--rd);color:var(--red)}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.tag-g{background:var(--gd);color:var(--green)}.tag-r{background:var(--rd);color:var(--red)}
+.tag-a{background:var(--ad);color:var(--amber)}.tag-b{background:var(--bd);color:var(--blue)}
+
+/* ROWS */
+.sr{display:flex;align-items:center;justify-content:space-between;padding:9px 0;
+  border-bottom:1px solid rgba(0,200,120,.07);font-size:13px}
+.sr:last-child{border:none}
+.sv2{font-size:12px;color:var(--t2)}
+.ip-row{display:flex;align-items:center;gap:8px;padding:9px 13px;border-bottom:1px solid var(--border);font-size:12px}
+.ip-row:last-child{border-bottom:none}
+
+/* FORM */
+.fg{margin-bottom:11px}.fl{font-size:11px;color:var(--t2);margin-bottom:3px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.info-box{font-size:11px;color:var(--blue);padding:8px 12px;background:var(--bd);border-radius:var(--r);margin-bottom:12px}
+
+/* MODAL */
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;
+  align-items:center;justify-content:center;padding:16px}
 .mo.on{display:flex}
-.md{background:var(--bg1);border:1px solid var(--border2);border-radius:10px;padding:22px;width:440px;max-width:94vw;max-height:85vh;overflow-y:auto}
-.mtit{font-size:15px;font-weight:600;margin-bottom:16px;color:var(--green2);display:flex;align-items:center;justify-content:space-between}
-.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
-.fl{font-size:11px;color:var(--text2)}
-.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}
-.mc{background:none;border:none;color:var(--text2);font-size:18px;cursor:pointer;padding:0 4px}
+.md{background:var(--bg1);border:1px solid var(--b2);border-radius:10px;padding:22px;
+  width:460px;max-width:100%;max-height:88vh;overflow-y:auto}
+.md-lg{width:520px}
+.mtit{font-size:14px;font-weight:600;margin-bottom:16px;color:var(--g2);
+  display:flex;align-items:center;justify-content:space-between}
+.mc{background:none;border:none;color:var(--t2);font-size:16px;cursor:pointer;padding:0 3px}
 .mc:hover{color:var(--text)}
-.empty{grid-column:1/-1;text-align:center;padding:48px;color:var(--text3);font-size:13px}
-.esp{width:28px;height:28px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
-.warn-box{font-size:11px;color:var(--amber);padding:8px 12px;background:var(--ad);border-radius:var(--r);margin-bottom:12px}
-@media(max-width:900px){.summary{grid-template-columns:repeat(3,1fr)}.hdr-kpi:nth-child(n+4){display:none}}
-@media(max-width:600px){.summary{grid-template-columns:repeat(2,1fr)}.dgrid{grid-template-columns:1fr}}
+.mf{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.mdlbl{font-size:11px;font-weight:600;color:var(--t2);letter-spacing:.06em;text-transform:uppercase;
+  margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.mdlbl::after{content:'';flex:1;height:1px;background:var(--border)}
+.warn-box{font-size:11px;color:var(--amber);padding:8px 12px;background:var(--ad);border-radius:var(--r);margin-bottom:10px}
+
+.key-preview{background:var(--bg2);border:2px solid var(--b2);border-radius:8px;padding:14px;text-align:center;margin-bottom:14px}
+.key-val{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--g2);letter-spacing:.15em}
+.key-hint{font-size:11px;color:var(--t3);margin-top:4px}
+.empty{text-align:center;padding:36px;color:var(--t3);font-size:13px}
+.esp{width:26px;height:26px;border:2px solid var(--b2);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+.no-site{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;text-align:center}
+.no-site-icon{font-size:40px;margin-bottom:16px;opacity:.5}
+.no-site h3{font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px}
+.no-site p{font-size:13px;color:var(--t3);max-width:360px;line-height:1.6}
+.hint{font-size:11px;color:var(--t3);margin-top:4px}
+
+@media(max-width:900px){.sum{grid-template-columns:repeat(3,1fr)}.hkpi:nth-child(n+4){display:none}}
+@media(max-width:600px){.sum{grid-template-columns:repeat(2,1fr)}.dgrid{grid-template-columns:1fr}.row2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 
-<div id="login-page">
-  <div class="login-box">
-    <div class="login-logo">
-      <span class="login-logo-dot"></span>
-      <span class="login-logo-text">矿场监控中心</span>
+<!-- LOGIN -->
+<div id="pg-login">
+  <div class="lbox">
+    <div class="llogo"><span class="ldot"></span><span class="ltxt">矿场监控中心</span></div>
+    <div class="lsub">Mining Farm Monitor — 远程监控与控制</div>
+    <div class="ltab">
+      <button class="ltab-btn on" id="lt-login" onclick="switchLTab('login')">登 录</button>
+      <button class="ltab-btn" id="lt-reg" onclick="switchLTab('reg')">注 册</button>
     </div>
-    <div class="login-sub">现场设备监控与远程控制系统</div>
-    <label class="lbl">登录邮箱</label>
-    <input class="inp" id="l-email" type="email" placeholder="your@email.com" autocomplete="username">
-    <label class="lbl">密码</label>
-    <input class="inp" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password">
-    <button class="btn-login" id="btn-login" onclick="doLogin()">登 录</button>
-    <div class="login-err" id="login-err"></div>
+    <div id="lf-login">
+      <label class="lbl">邮箱</label><input class="inp" id="l-email" type="email" placeholder="your@email.com" autocomplete="username">
+      <label class="lbl">密码</label><input class="inp" id="l-pass" type="password" placeholder="••••••••">
+      <button class="btn-lg" id="btn-login" onclick="doLogin()">登 录</button>
+    </div>
+    <div id="lf-reg" style="display:none">
+      <label class="lbl">邮箱</label><input class="inp" id="r-email" type="email" placeholder="your@email.com">
+      <label class="lbl">密码（6位以上）</label><input class="inp" id="r-pass" type="password" placeholder="••••••••">
+      <label class="lbl">确认密码</label><input class="inp" id="r-pass2" type="password" placeholder="再次输入">
+      <button class="btn-lg" id="btn-reg" onclick="doRegister()">注 册</button>
+    </div>
+    <div class="lerr" id="lerr"></div>
   </div>
 </div>
 
-<div id="app">
+<!-- APP -->
+<div id="pg-app">
   <div class="hdr">
-    <div class="hdr-logo">矿场监控中心</div>
-    <div class="hdr-sep"></div>
-    <div class="hdr-kpi"><div class="hdr-kpi-l">在运</div><div class="hdr-kpi-v" id="h-online" style="color:var(--green2)">—</div></div>
-    <div class="hdr-sep"></div>
-    <div class="hdr-kpi"><div class="hdr-kpi-l">总算力</div><div class="hdr-kpi-v" id="h-hr">— TH/s</div></div>
-    <div class="hdr-sep"></div>
-    <div class="hdr-kpi"><div class="hdr-kpi-l">BTC价格</div><div class="btc-live" id="h-price">—</div></div>
-    <div class="hdr-r">
-      <div class="rbtn" id="btn-ref" onclick="refreshAll()"><span class="ri">⟳</span><span id="rcd">30s</span></div>
-      <span class="user-tag" id="utag">—</span>
-      <button class="btn btn-red" onclick="doLogout()" style="font-size:11px;padding:4px 10px">退出</button>
+    <div class="hlogo">矿场监控中心</div>
+    <div class="hsep"></div>
+    <div class="hkpi"><div class="hkl">在运</div><div class="hkv" id="h-online" style="color:var(--g2)">—</div></div>
+    <div class="hsep"></div>
+    <div class="hkpi"><div class="hkl">总算力</div><div class="hkv" id="h-hr">— TH/s</div></div>
+    <div class="hsep"></div>
+    <div class="hkpi"><div class="hkl">BTC价格</div><div class="hkv" id="h-price" style="color:var(--blue)">—</div></div>
+    <div class="hr">
+      <div class="rbtn" id="btn-ref" onclick="refreshCur()"><span class="ri">⟳</span><span id="rcd">30s</span></div>
+      <span style="font-size:11px;color:var(--t3)" id="utag">—</span>
+      <button class="btn btn-r" onclick="doLogout()" style="font-size:11px">退出</button>
     </div>
   </div>
 
-  <div class="alert-bar" id="abar"><span>⚠</span><span id="amsg"></span></div>
+  <div class="site-bar" id="site-bar">
+    <button class="site-add" onclick="openM('m-add-site')">＋ 添加矿场</button>
+  </div>
+
+  <div class="tabs" id="main-tabs">
+    <button class="tab on" id="tab-monitor" onclick="switchTab('monitor',this)">📊 监控</button>
+    <button class="tab" id="tab-chart" onclick="switchTab('chart',this)">📈 算力图</button>
+    <button class="tab" id="tab-alerts" onclick="switchTab('alerts',this)">🔔 告警记录</button>
+    <button class="tab" id="tab-ips" onclick="switchTab('ips',this)">📡 IP段</button>
+    <button class="tab" id="tab-members" onclick="switchTab('members',this)">👥 成员</button>
+    <button class="tab" id="tab-cmdlog" onclick="switchTab('cmdlog',this)">📋 指令记录</button>
+  </div>
+
+  <div class="abar" id="abar"><span>⚠</span><span id="amsg"></span></div>
 
   <div class="main">
-    <div class="summary">
-      <div class="sc"><div class="sl">总矿机</div><div class="sv" id="s-total">—</div><div class="ss" id="s-sub">—</div></div>
-      <div class="sc" id="s-wc"><div class="sl">告警/离线</div><div class="sv" id="s-warn">—</div><div class="ss">需要关注</div></div>
-      <div class="sc"><div class="sl">总算力</div><div class="sv g" id="s-hr">—</div><div class="ss">TH/s</div></div>
-      <div class="sc"><div class="sl">平均温度</div><div class="sv" id="s-temp">—</div><div class="ss">°C 主板</div></div>
-      <div class="sc"><div class="sl">数据更新</div><div class="sv blue" id="s-upd" style="font-size:13px">—</div><div class="ss">Agent最后上报</div></div>
+
+    <!-- 监控 -->
+    <div class="tc on" id="tc-monitor">
+      <div class="no-site" id="no-site">
+        <div class="no-site-icon">🏭</div>
+        <h3>还没有矿场</h3>
+        <p>点击「＋ 添加矿场」输入现场 Agent 的 Site Key 关联矿场</p>
+        <button class="btn btn-p" style="margin-top:16px;padding:8px 20px" onclick="openM('m-add-site')">添加矿场</button>
+      </div>
+      <div id="monitor-content" style="display:none">
+        <div class="sum">
+          <div class="sc"><div class="sl">总矿机</div><div class="sv" id="s-total">—</div><div class="ss" id="s-sub">—</div></div>
+          <div class="sc" id="s-wc"><div class="sl">告警/离线</div><div class="sv" id="s-warn">—</div><div class="ss">需要关注</div></div>
+          <div class="sc"><div class="sl">总算力</div><div class="sv" id="s-hr">—</div><div class="ss">TH/s</div></div>
+          <div class="sc"><div class="sl">平均温度</div><div class="sv" id="s-temp">—</div><div class="ss">°C</div></div>
+          <div class="sc"><div class="sl">数据更新</div><div class="sv blue" id="s-upd" style="font-size:12px">—</div><div class="ss">最后上报</div></div>
+        </div>
+        <div class="sec"><span>矿机状态</span><span class="secl"></span>
+          <span id="role-tag" style="font-size:11px;color:var(--t3)"></span>
+        </div>
+        <div class="dgrid" id="dgrid"><div class="empty"><div class="esp"></div>加载中…</div></div>
+      </div>
     </div>
 
-    <div class="sec">矿机设备状态</div>
-    <div class="dgrid" id="dgrid"><div class="empty"><div class="esp"></div>正在加载设备数据…</div></div>
-
-    <div class="sec">指令执行记录</div>
-    <div class="clog">
-      <div class="clhd">最近20条指令 <button class="btn" onclick="loadCmdLog()" style="font-size:11px;padding:3px 9px">刷新</button></div>
-      <div style="overflow-x:auto">
-        <table class="ctbl">
-          <thead><tr><th>时间</th><th>矿机</th><th>指令</th><th>参数</th><th>状态</th><th>结果</th><th>操作人</th></tr></thead>
-          <tbody id="ctbody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:20px">暂无记录</td></tr></tbody>
-        </table>
+    <!-- 算力图 -->
+    <div class="tc" id="tc-chart">
+      <div class="card">
+        <div class="card-hd">算力趋势
+          <div style="display:flex;gap:6px">
+            <button class="btn" onclick="loadChart(24)" style="font-size:11px;padding:3px 8px">24小时</button>
+            <button class="btn" onclick="loadChart(72)" style="font-size:11px;padding:3px 8px">3天</button>
+            <button class="btn" onclick="loadChart(168)" style="font-size:11px;padding:3px 8px">7天</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <canvas id="hrChart" height="180"></canvas>
+          <p class="hint" style="margin-top:8px;text-align:center">绿线：监控算力 · 灰线：理论算力</p>
+        </div>
       </div>
+    </div>
+
+    <!-- 告警记录 -->
+    <div class="tc" id="tc-alerts">
+      <div class="card">
+        <div class="card-hd">最近告警记录
+          <button class="btn" onclick="loadAlerts()" style="font-size:11px;padding:3px 8px">刷新</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="ctbl">
+            <thead><tr><th>时间</th><th>类型</th><th>矿机</th><th>详情</th></tr></thead>
+            <tbody id="alert-tbody"><tr><td colspan="4" style="text-align:center;color:var(--t3);padding:20px">暂无告警记录</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- IP段 -->
+    <div class="tc" id="tc-ips">
+      <div class="info-box">💡 Agent 自动扫描 IP 段内所有设备，无需手动填写矿机 IP，配置后约 30 秒生效</div>
+      <div class="card">
+        <div class="card-hd">IP 段列表
+          <button class="btn btn-p" style="font-size:11px;padding:3px 10px" onclick="openM('m-add-ip')" id="btn-add-ip">＋ 添加</button>
+        </div>
+        <div id="ip-list"><div class="empty" style="padding:20px">暂无 IP 段</div></div>
+      </div>
+    </div>
+
+    <!-- 成员 -->
+    <div class="tc" id="tc-members">
+      <div class="info-box">💡 管理员：全部权限 · 运维：可控制矿机 · 只读：仅查看数据</div>
+      <div class="card">
+        <div class="card-hd">成员列表
+          <button class="btn btn-p" style="font-size:11px;padding:3px 10px" onclick="openM('m-add-member')" id="btn-add-member">＋ 邀请</button>
+        </div>
+        <div id="member-list"><div class="empty" style="padding:20px">加载中…</div></div>
+      </div>
+    </div>
+
+    <!-- 指令记录 -->
+    <div class="tc" id="tc-cmdlog">
+      <div class="card">
+        <div class="card-hd">最近50条指令
+          <button class="btn" onclick="loadCmdLog()" style="font-size:11px;padding:3px 8px">刷新</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="ctbl">
+            <thead><tr><th>时间</th><th>矿机</th><th>指令</th><th>参数</th><th>状态</th><th>结果</th><th>操作人</th></tr></thead>
+            <tbody id="ctbody"><tr><td colspan="7" style="text-align:center;color:var(--t3);padding:20px">暂无记录</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL: 添加矿场 -->
+<div class="mo" id="m-add-site">
+  <div class="md">
+    <div class="mtit">添加矿场 <button class="mc" onclick="closeM('m-add-site')">✕</button></div>
+    <p style="font-size:12px;color:var(--t2);margin-bottom:14px">在现场 Agent 配置页面（http://局域网IP:8765）查看 Site Key</p>
+    <div class="fg"><label class="fl">Site Key *</label>
+      <input class="inp" id="sk-input" placeholder="MF-XXXX-XXXX" style="font-family:var(--mono);letter-spacing:.1em;font-size:15px;text-transform:uppercase">
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeM('m-add-site')">取消</button>
+      <button class="btn btn-p" onclick="addSite()">关联矿场</button>
     </div>
   </div>
 </div>
 
-<!-- 切换矿池 -->
+<!-- MODAL: 矿池控制 -->
 <div class="mo" id="m-pool">
   <div class="md">
     <div class="mtit">切换矿池 <button class="mc" onclick="closeM('m-pool')">✕</button></div>
     <div class="fg"><label class="fl">目标矿机</label><input class="inp" id="p-box" readonly></div>
-    <div class="fg"><label class="fl">矿池1 URL *</label><input class="inp" id="p-url1" placeholder="stratum+tcp://btc.antpool.com:3333"></div>
-    <div class="fg"><label class="fl">矿池1 账号 *</label><input class="inp" id="p-user1" placeholder="account.worker1"></div>
-    <div class="fg"><label class="fl">矿池1 密码</label><input class="inp" id="p-pass1" placeholder="留空或填123"></div>
-    <div class="fg"><label class="fl">矿池2 URL（备用）</label><input class="inp" id="p-url2"></div>
-    <div class="fg"><label class="fl">矿池2 账号</label><input class="inp" id="p-user2"></div>
+    <div class="mdlbl">主矿池</div>
+    <div class="fg"><label class="fl">URL *</label><input class="inp" id="p-url1" placeholder="stratum+tcp://btc.antpool.com:3333"></div>
+    <div class="row2">
+      <div class="fg"><label class="fl">账号 *</label><input class="inp" id="p-user1"></div>
+      <div class="fg"><label class="fl">密码</label><input class="inp" id="p-pass1"></div>
+    </div>
+    <div class="mdlbl">备用矿池（可选）</div>
+    <div class="fg"><label class="fl">URL</label><input class="inp" id="p-url2"></div>
+    <div class="row2">
+      <div class="fg"><label class="fl">账号</label><input class="inp" id="p-user2"></div>
+      <div class="fg"><label class="fl">密码</label><input class="inp" id="p-pass2"></div>
+    </div>
     <div class="mf">
       <button class="btn" onclick="closeM('m-pool')">取消</button>
-      <button class="btn btn-blue" onclick="sendSetPool()">确认切换</button>
+      <button class="btn btn-b" onclick="sendSetPool()">确认切换</button>
     </div>
   </div>
 </div>
 
-<!-- 功耗设置 -->
+<!-- MODAL: 功耗 -->
 <div class="mo" id="m-power">
   <div class="md">
-    <div class="mtit">功耗 / 频率设置 <button class="mc" onclick="closeM('m-power')">✕</button></div>
+    <div class="mtit">功耗 / 频率 <button class="mc" onclick="closeM('m-power')">✕</button></div>
     <div class="fg"><label class="fl">目标矿机</label><input class="inp" id="pw-box" readonly></div>
     <div class="fg"><label class="fl">功耗模式</label>
       <select class="inp" id="pw-mode">
         <option value="">— 不修改 —</option>
         <option value="high">高性能（超频）</option>
-        <option value="normal">标准模式</option>
+        <option value="normal">标准</option>
         <option value="low">低功耗</option>
-        <option value="sleep">睡眠模式</option>
+        <option value="sleep">睡眠</option>
       </select>
     </div>
-    <div class="fg"><label class="fl">频率 MHz（留空=不修改）</label><input class="inp" id="pw-freq" type="number" placeholder="如：600"></div>
+    <div class="fg"><label class="fl">频率 MHz（留空=不修改）</label><input class="inp" id="pw-freq" type="number"></div>
     <div class="warn-box">⚠ 超频可能导致矿机过热，请谨慎操作</div>
     <div class="mf">
       <button class="btn" onclick="closeM('m-power')">取消</button>
-      <button class="btn btn-amber" onclick="sendSetPower()">确认设置</button>
+      <button class="btn btn-a" onclick="sendSetPower()">确认</button>
     </div>
   </div>
 </div>
 
-<!-- 确认弹窗 -->
+<!-- MODAL: 添加IP段 -->
+<div class="mo" id="m-add-ip">
+  <div class="md">
+    <div class="mtit">添加 IP 段 <button class="mc" onclick="closeM('m-add-ip')">✕</button></div>
+    <div class="row2">
+      <div class="fg"><label class="fl">起始 IP *</label><input class="inp" id="ip-s" placeholder="192.168.1.1"></div>
+      <div class="fg"><label class="fl">结束 IP *</label><input class="inp" id="ip-e" placeholder="192.168.1.255"></div>
+    </div>
+    <div class="fg"><label class="fl">备注</label><input class="inp" id="ip-note" placeholder="如：主楼一层"></div>
+    <div class="mf">
+      <button class="btn" onclick="closeM('m-add-ip')">取消</button>
+      <button class="btn btn-p" onclick="addIpRange()">添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 邀请成员 -->
+<div class="mo" id="m-add-member">
+  <div class="md">
+    <div class="mtit">邀请成员 <button class="mc" onclick="closeM('m-add-member')">✕</button></div>
+    <p style="font-size:12px;color:var(--t2);margin-bottom:14px">被邀请成员需先注册账号，登录后即可查看此矿场</p>
+    <div class="fg"><label class="fl">邮箱 *</label><input class="inp" id="m-email" placeholder="member@email.com"></div>
+    <div class="fg"><label class="fl">角色</label>
+      <select class="inp" id="m-role">
+        <option value="operator">运维（可控制矿机）</option>
+        <option value="viewer">只读（仅查看）</option>
+        <option value="admin">管理员（全部权限）</option>
+      </select>
+    </div>
+    <div class="mf">
+      <button class="btn" onclick="closeM('m-add-member')">取消</button>
+      <button class="btn btn-p" onclick="addMember()">添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 确认 -->
 <div class="mo" id="m-confirm">
-  <div class="md" style="width:360px">
-    <div class="mtit" id="cf-title">确认操作 <button class="mc" onclick="closeM('m-confirm')">✕</button></div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:20px;white-space:pre-line" id="cf-msg"></div>
+  <div class="md" style="width:340px">
+    <div class="mtit"><span id="cf-title">确认操作</span><button class="mc" onclick="closeM('m-confirm')">✕</button></div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:18px;white-space:pre-line" id="cf-msg"></div>
     <div class="mf">
       <button class="btn" onclick="closeM('m-confirm')">取消</button>
       <button class="btn" id="cf-ok">确认</button>
@@ -227,50 +461,166 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,'PingFang 
 <script>
 const SB_URL='https://eoachvacnhcjxejwoiqs.supabase.co';
 const SB_KEY='sb_publishable_dodNrHRcVxd0b7Q0mf7Cqw_-c1Um-uY';
-let _tok='',_email='',_cd=30,_ct=null;
+let _tok='',_email='',_uid='',_cd=30,_ct=null;
+let _sites=[],_curSite=null,_myRole='admin';
+let _hrChart=null;
 
 const H=()=>({'apikey':SB_KEY,'Authorization':`Bearer ${_tok||SB_KEY}`,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'});
+const q=id=>document.getElementById(id);
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 
-async function sbGet(path){const r=await fetch(`${SB_URL}/rest/v1/${path}`,{headers:H()});if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json();}
-
+// ── LOGIN ──────────────────────────────────────────────────────────────────
+function switchLTab(t){
+  ['login','reg'].forEach(x=>{q('lt-'+x).classList.toggle('on',x===t);q('lf-'+x).style.display=x===t?'':'none'});
+  q('lerr').style.display='none';
+}
 async function doLogin(){
-  const email=document.getElementById('l-email').value.trim();
-  const pass=document.getElementById('l-pass').value;
-  const err=document.getElementById('login-err');
-  const btn=document.getElementById('btn-login');
-  if(!email||!pass){err.textContent='请填写邮箱和密码';err.style.display='block';return;}
-  btn.disabled=true;btn.textContent='登录中…';err.style.display='none';
+  const email=q('l-email').value.trim(),pass=q('l-pass').value;
+  if(!email||!pass){showLErr('请填写邮箱和密码');return;}
+  const btn=q('btn-login');btn.disabled=true;btn.textContent='登录中…';
   try{
     const r=await fetch(`${SB_URL}/auth/v1/token?grant_type=password`,{
       method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY},
-      body:JSON.stringify({email,password:pass})
-    });
+      body:JSON.stringify({email,password:pass})});
     const d=await r.json();
-    if(d.access_token){
-      _tok=d.access_token;_email=email;
-      document.getElementById('login-page').style.display='none';
-      document.getElementById('app').style.display='';
-      document.getElementById('utag').textContent=email;
-      refreshAll();startCd();fetchPrice();setInterval(fetchPrice,60000);
-    }else{err.textContent=d.error_description||'邮箱或密码错误';err.style.display='block';}
-  }catch(e){err.textContent='网络错误';err.style.display='block';}
+    if(d.access_token){_tok=d.access_token;_email=email;_uid=d.user?.id||'';enterApp();}
+    else showLErr(d.error_description||'邮箱或密码错误');
+  }catch{showLErr('网络错误');}
   btn.disabled=false;btn.textContent='登 录';
 }
-function doLogout(){_tok='';clearInterval(_ct);document.getElementById('app').style.display='none';document.getElementById('login-page').style.display='flex';}
-document.getElementById('l-pass').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+async function doRegister(){
+  const email=q('r-email').value.trim(),pass=q('r-pass').value,pass2=q('r-pass2').value;
+  if(!email||!pass){showLErr('请填写邮箱和密码');return;}
+  if(pass!==pass2){showLErr('两次密码不一致');return;}
+  if(pass.length<6){showLErr('密码至少6位');return;}
+  const btn=q('btn-reg');btn.disabled=true;btn.textContent='注册中…';
+  try{
+    const r=await fetch(`${SB_URL}/auth/v1/signup`,{
+      method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY},
+      body:JSON.stringify({email,password:pass})});
+    const d=await r.json();
+    if(d.access_token){_tok=d.access_token;_email=email;_uid=d.user?.id||'';enterApp();}
+    else if(d.id){q('lerr').textContent='注册成功！请查收邮件验证后登录';q('lerr').style.cssText='display:block;color:var(--green)';switchLTab('login');}
+    else showLErr(d.msg||d.message||'注册失败');
+  }catch{showLErr('网络错误');}
+  btn.disabled=false;btn.textContent='注 册';
+}
+function showLErr(m){q('lerr').textContent=m;q('lerr').style.display='block';}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'){if(document.activeElement?.closest('#lf-reg'))doRegister();else doLogin();}});
+function doLogout(){_tok='';_email='';_sites=[];_curSite=null;clearInterval(_ct);
+  q('pg-app').style.display='none';q('pg-login').style.display='flex';}
 
-function startCd(){clearInterval(_ct);_cd=30;_ct=setInterval(()=>{_cd--;const el=document.getElementById('rcd');if(el)el.textContent=_cd+'s';if(_cd<=0){refreshAll();_cd=30;}},1000);}
-
-async function refreshAll(){
-  const btn=document.getElementById('btn-ref');btn.classList.add('spinning');
-  try{await Promise.all([loadDevices(),loadCmdLog()]);}catch(e){}
-  btn.classList.remove('spinning');_cd=30;const el=document.getElementById('rcd');if(el)el.textContent='30s';
+function enterApp(){
+  q('pg-login').style.display='none';q('pg-app').style.display='flex';
+  q('utag').textContent=_email;
+  loadSites();startCd();fetchPrice();setInterval(fetchPrice,60000);
 }
 
+// ── SITES ─────────────────────────────────────────────────────────────────
+async function loadSites(){
+  try{
+    // 先查自己创建的矿场
+    const r1=await fetch(`${SB_URL}/rest/v1/sites?select=*&owner_id=eq.${_uid}&order=created_at.asc`,{headers:H()});
+    const owned=r1.ok?await r1.json():[];
+    // 再查被邀请的矿场
+    const r2=await fetch(`${SB_URL}/rest/v1/site_members?select=site_id,role&email=eq.${encodeURIComponent(_email)}`,{headers:H()});
+    const memberships=r2.ok?await r2.json():[];
+    const memberSiteIds=memberships.map(m=>m.site_id);
+    let memberSites=[];
+    if(memberSiteIds.length){
+      const ids=memberSiteIds.map(id=>`"${id}"`).join(',');
+      const r3=await fetch(`${SB_URL}/rest/v1/sites?select=*&id=in.(${ids})`,{headers:H()});
+      memberSites=r3.ok?await r3.json():[];
+      // 注入角色
+      memberSites.forEach(s=>{
+        const m=memberships.find(x=>x.site_id===s.id);
+        s._role=m?m.role:'viewer';
+      });
+    }
+    owned.forEach(s=>s._role='admin');
+    _sites=[...owned,...memberSites.filter(s=>!owned.find(o=>o.id===s.id))];
+  }catch{_sites=[];}
+  renderSiteBar();
+  if(_sites.length){
+    if(!_curSite||!_sites.find(s=>s.id===_curSite?.id)){_curSite=_sites[0];}
+    _myRole=_curSite._role||'admin';
+    q('no-site').style.display='none';q('monitor-content').style.display='';
+    applyRoleUI();refreshCur();
+  } else {
+    q('no-site').style.display='';q('monitor-content').style.display='none';
+  }
+}
+
+function renderSiteBar(){
+  const bar=q('site-bar');
+  bar.innerHTML='<button class="site-add" onclick="openM(\'m-add-site\')">＋ 添加矿场</button>';
+  _sites.forEach(s=>{
+    const btn=document.createElement('button');
+    btn.className='site-chip'+((_curSite?.id===s.id)?' on':'');
+    btn.innerHTML=`<span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span>${esc(s.name||s.site_key)}`;
+    btn.onclick=()=>{_curSite=s;_myRole=s._role||'admin';renderSiteBar();applyRoleUI();refreshCur();};
+    bar.insertBefore(btn,bar.firstChild);
+  });
+}
+
+function applyRoleUI(){
+  // 只读用户隐藏控制按钮
+  const canCtrl=_myRole==='admin'||_myRole==='operator';
+  const canManage=_myRole==='admin';
+  document.querySelectorAll('.da').forEach(el=>el.style.display=canCtrl?'':'none');
+  const bai=q('btn-add-ip');if(bai)bai.style.display=canManage?'':'none';
+  const bam=q('btn-add-member');if(bam)bam.style.display=canManage?'':'none';
+  const rt=q('role-tag');if(rt){
+    const labels={admin:'管理员',operator:'运维',viewer:'只读'};
+    rt.textContent=labels[_myRole]||_myRole;
+  }
+}
+
+async function addSite(){
+  const key=q('sk-input').value.trim().toUpperCase();
+  if(!key){alert('请输入 Site Key');return;}
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/sites?site_key=eq.${encodeURIComponent(key)}`,{headers:H()});
+    const rows=await r.json();
+    if(!rows.length){alert('未找到该 Site Key，请确认 Agent 已启动并联网');return;}
+    const site=rows[0];
+    await fetch(`${SB_URL}/rest/v1/sites?id=eq.${site.id}`,{
+      method:'PATCH',headers:{...H(),'Prefer':'return=minimal'},
+      body:JSON.stringify({owner_id:_uid})});
+    closeM('m-add-site');q('sk-input').value='';
+    await loadSites();
+  }catch(e){alert('操作失败：'+e.message);}
+}
+
+// ── TABS ───────────────────────────────────────────────────────────────────
+function switchTab(name,btn){
+  document.querySelectorAll('.tc').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  q('tc-'+name).classList.add('on');btn.classList.add('on');
+  if(name==='chart')loadChart(24);
+  if(name==='alerts')loadAlerts();
+  if(name==='ips')loadIpRanges();
+  if(name==='members')loadMembers();
+  if(name==='cmdlog')loadCmdLog();
+}
+
+// ── COUNTDOWN ─────────────────────────────────────────────────────────────
+function startCd(){clearInterval(_ct);_cd=30;_ct=setInterval(()=>{_cd--;const el=q('rcd');if(el)el.textContent=_cd+'s';if(_cd<=0){refreshCur();_cd=30;}},1000);}
+async function refreshCur(){
+  if(!_curSite)return;
+  const btn=q('btn-ref');btn.classList.add('spin');
+  await loadDevices();btn.classList.remove('spin');
+  _cd=30;const el=q('rcd');if(el)el.textContent='30s';
+}
+
+// ── DEVICES ────────────────────────────────────────────────────────────────
 async function loadDevices(){
-  let rows;
-  try{rows=await sbGet('device_status?order=box_name.asc');}
-  catch(e){document.getElementById('dgrid').innerHTML=`<div class="empty">加载失败：${e.message}</div>`;return;}
+  if(!_curSite)return;
+  let rows=[];
+  try{
+    const r=await fetch(`${SB_URL}/rest/v1/device_status?site_id=eq.${_curSite.id}&order=box_ip.asc`,{headers:H()});
+    rows=r.ok?await r.json():[];
+  }catch{}
   updateSummary(rows);renderDevices(rows);
 }
 
@@ -281,136 +631,255 @@ function updateSummary(rows){
   const avgT=temps.length?(temps.reduce((a,b)=>a+b,0)/temps.length).toFixed(1):'—';
   const lastTs=rows.map(r=>r.updated_at).filter(Boolean).sort().pop();
   const lastStr=lastTs?new Date(lastTs).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
-  const q=id=>document.getElementById(id);
   q('s-total').textContent=rows.length;q('s-sub').textContent=`在线${on.length} / 离线${off.length}`;
-  q('s-warn').textContent=off.length;q('s-warn').className='sv '+(off.length?'err':'');q('s-wc').className='sc '+(off.length?'err':'');
+  q('s-warn').textContent=off.length;q('s-warn').className='sv '+(off.length?'err':'');
+  q('s-wc').className='sc '+(off.length?'err':'');
   q('s-hr').textContent=hr.toFixed(2);
-  q('s-temp').textContent=avgT;q('s-temp').className='sv '+(parseFloat(avgT)>80?'r':parseFloat(avgT)>70?'a':'');
+  q('s-temp').textContent=avgT;q('s-temp').className='sv '+(parseFloat(avgT)>80?'r':parseFloat(avgT)>70?'amber':'');
   q('s-upd').textContent=lastStr;q('h-online').textContent=`${on.length}/${rows.length}`;q('h-hr').textContent=hr.toFixed(2)+' TH/s';
   const abar=q('abar'),amsg=q('amsg');
   if(off.length){amsg.textContent=`${off.length}台矿机离线：`+off.map(r=>r.box_name||r.box_ip).join(', ');abar.classList.add('on');}
-  else{abar.classList.remove('on');}
+  else abar.classList.remove('on');
 }
 
 function fmtUp(s){if(!s)return'—';const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);return h>=24?`${Math.floor(h/24)}天${h%24}时`:`${h}时${m}分`;}
+const canCtrl=()=>_myRole==='admin'||_myRole==='operator';
 
 function renderDevices(rows){
-  const g=document.getElementById('dgrid');
-  if(!rows.length){g.innerHTML='<div class="empty">暂无设备数据<br><small style="color:var(--text3)">请确认现场Agent已启动</small></div>';return;}
+  const g=q('dgrid');
+  if(!rows.length){g.innerHTML='<div class="empty"><div class="esp"></div>暂无在线矿机<br><small style="color:var(--t3)">请确认 IP 段已配置且 Agent 正在运行</small></div>';return;}
   g.innerHTML=rows.map(r=>{
-    const st=r.online?'online':'offline';
     const tc=r.temp_board>80?'r':r.temp_board>70?'a':'g';
-    const pu=(r.pool_user||'—').replace(/^[^.]*\./,'');
-    return `<div class="dc ${r.online?'':'err-c'}">
+    const pu=(r.pool_user||'—').replace(/^[^.]+\./,'');
+    const ip=esc(r.box_ip),name=esc(r.box_name||r.box_ip);
+    const pu_e=esc(r.pool_user||''),url_e=esc(r.pool_url||''),pm=esc(r.power_mode||'');
+    const acts=canCtrl()?`<div class="da">
+      <button class="btn btn-a" onclick="cfmAct('reboot','${ip}','${name}')">⟳ 重启</button>
+      <button class="btn btn-b" onclick="openPoolCtrl('${ip}','${name}','${url_e}','${pu_e}')">矿池</button>
+      <button class="btn btn-g" onclick="openPower('${ip}','${name}','${pm}')">功耗</button>
+      <button class="btn btn-r" onclick="cfmAct('poweroff','${ip}','${name}')">关机</button>
+    </div>`:'';
+    return `<div class="dc ${r.online?'':'ec'}">
       <div class="dhd">
-        <span class="dst ${st}"></span>
-        <span class="dn">${r.box_name||r.box_ip}</span>
-        <span class="dip">${r.box_ip}</span>
+        <span class="dst ${r.online?'on':'off'}"></span>
+        <span class="dname">${name}</span>
+        <span class="dip">${ip}</span>
         <span class="dut">${fmtUp(r.uptime_sec)}</span>
       </div>
-      <div class="dmets">
-        <div class="dmet"><div class="dml">算力</div><div class="dmv ${r.online?'g':'r'}">${r.online?(r.hashrate||0).toFixed(2):'—'}</div><div class="dml">TH/s</div></div>
-        <div class="dmet"><div class="dml">温度</div><div class="dmv ${r.online?tc:'r'}">${r.online&&r.temp_board?r.temp_board.toFixed(1)+'°C':'—'}</div><div class="dml">主板</div></div>
-        <div class="dmet"><div class="dml">风扇</div><div class="dmv">${r.online&&r.fan_speed?r.fan_speed:'—'}</div><div class="dml">${r.power_mode||'RPM'}</div></div>
+      <div class="dm">
+        <div class="dmi"><div class="dml">算力</div><div class="dmv ${r.online?'g':'r'}">${r.online?(r.hashrate||0).toFixed(2):'—'}</div><div class="dml">TH/s</div></div>
+        <div class="dmi"><div class="dml">温度</div><div class="dmv ${r.online?tc:'r'}">${r.online&&r.temp_board?r.temp_board.toFixed(1)+'°C':'—'}</div><div class="dml">主板</div></div>
+        <div class="dmi"><div class="dml">风扇</div><div class="dmv">${r.online&&r.fan_speed?r.fan_speed:'—'}</div><div class="dml">${pm||'RPM'}</div></div>
       </div>
-      <div class="dpool">
+      <div class="dp">
         <span class="pdot" style="background:${r.online?'var(--green)':'var(--red)'}"></span>
-        <span class="pname" title="${r.pool_user||''}">${pu}</span>
-        <span style="color:var(--text3);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px" title="${r.pool_url||''}">${(r.pool_url||'—').replace('stratum+tcp://','')}</span>
+        <span class="pn" title="${pu_e}">${esc(pu)}</span>
+        <span style="color:var(--t3);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px" title="${url_e}">${url_e.replace('stratum+tcp://','')}</span>
       </div>
-      <div class="dact">
-        <button class="btn btn-amber" onclick="cfmAct('reboot','${r.box_ip}','${r.box_name||r.box_ip}')">⟳ 重启</button>
-        <button class="btn btn-blue" onclick="openPool('${r.box_ip}','${r.box_name||r.box_ip}','${(r.pool_url||'').replace(/'/g,"\\'")}','${(r.pool_user||'').replace(/'/g,"\\'")}')">矿池</button>
-        <button class="btn btn-green" onclick="openPower('${r.box_ip}','${r.box_name||r.box_ip}','${r.power_mode||''}')">功耗</button>
-        <button class="btn btn-red" onclick="cfmAct('poweroff','${r.box_ip}','${r.box_name||r.box_ip}')">关机</button>
-      </div>
+      ${acts}
     </div>`;
   }).join('');
 }
 
-async function loadCmdLog(){
-  try{
-    const rows=await sbGet('device_commands?order=created_at.desc&limit=20');
-    const tb=document.getElementById('ctbody');
-    if(!rows.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:16px">暂无记录</td></tr>';return;}
-    const CMDS={reboot:'重启',poweroff:'关机',set_pool:'切换矿池',set_power_mode:'功耗模式',set_freq:'频率'};
-    const STLBL={pending:'待执行',running:'执行中',done:'成功',error:'失败'};
-    tb.innerHTML=rows.map(r=>{
-      const t=new Date(r.created_at).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
-      const p=r.params?JSON.stringify(r.params):'—';
-      return `<tr>
-        <td style="font-family:var(--mono);font-size:10px;color:var(--text2)">${t}</td>
-        <td><strong>${r.box_name||r.box_ip}</strong><br><span style="color:var(--text3);font-size:10px;font-family:var(--mono)">${r.box_ip}</span></td>
-        <td>${CMDS[r.command]||r.command}</td>
-        <td style="font-size:10px;color:var(--text2);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p}">${p}</td>
-        <td><span class="sbadge ${r.status}">${STLBL[r.status]||r.status}</span></td>
-        <td style="font-size:10px;color:var(--text2);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.result||''}">${r.result||'—'}</td>
-        <td style="font-size:10px;color:var(--text3)">${r.operator||'—'}</td>
-      </tr>`;
-    }).join('');
-  }catch(e){}
+// ── HASHRATE CHART ────────────────────────────────────────────────────────
+async function loadChart(hours=24){
+  if(!_curSite)return;
+  const since=new Date(Date.now()-hours*3600000).toISOString();
+  const r=await fetch(`${SB_URL}/rest/v1/hashrate_history?site_id=eq.${_curSite.id}&recorded_at=gte.${since}&order=recorded_at.asc&limit=500`,{headers:H()});
+  const rows=r.ok?await r.json():[];
+  const labels=rows.map(r=>r.recorded_at.slice(5,16).replace('T',' '));
+  const monitor=rows.map(r=>r.hr_monitor||0);
+  const theory=rows.map(r=>r.hr_theory||0);
+  const ctx=q('hrChart').getContext('2d');
+  if(_hrChart)_hrChart.destroy();
+  _hrChart=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {label:'监控算力 TH/s',data:monitor,borderColor:'#00e87a',backgroundColor:'rgba(0,232,122,.08)',tension:.3,fill:true,pointRadius:0,borderWidth:2},
+        {label:'理论算力 TH/s',data:theory,borderColor:'rgba(255,255,255,.2)',backgroundColor:'transparent',tension:.3,fill:false,pointRadius:0,borderWidth:1,borderDash:[4,4]}
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{labels:{color:'#6a9e82',font:{size:11}}},
+               tooltip:{mode:'index',intersect:false}},
+      scales:{
+        x:{ticks:{color:'#3a6a52',maxTicksLimit:hours<=24?12:7,font:{size:10}},grid:{color:'rgba(0,200,120,.05)'}},
+        y:{ticks:{color:'#3a6a52',font:{size:10}},grid:{color:'rgba(0,200,120,.05)'}}
+      }
+    }
+  });
 }
 
+// ── ALERTS ────────────────────────────────────────────────────────────────
+async function loadAlerts(){
+  if(!_curSite)return;
+  const r=await fetch(`${SB_URL}/rest/v1/alert_logs?site_id=eq.${_curSite.id}&order=created_at.desc&limit=50`,{headers:H()});
+  const rows=r.ok?await r.json():[];
+  const tb=q('alert-tbody');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--t3);padding:20px">暂无告警记录</td></tr>';return;}
+  const types={offline:'矿机离线',hashrate_drop:'算力下降',temp_high:'高温告警',auto_restart:'自动重启'};
+  const tclr={offline:'tag-r',hashrate_drop:'tag-a',temp_high:'tag-r',auto_restart:'tag-b'};
+  tb.innerHTML=rows.map(r=>{
+    const ts=new Date(r.created_at).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+    return `<tr>
+      <td style="font-size:11px;color:var(--t2);white-space:nowrap">${ts}</td>
+      <td><span class="sbadge ${tclr[r.type]||'running'}">${types[r.type]||r.type}</span></td>
+      <td style="font-family:var(--mono);font-size:11px">${esc(r.box_name||r.box_ip||'—')}</td>
+      <td style="font-size:11px;color:var(--t2)">${esc(r.message||'—')}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── IP RANGES ─────────────────────────────────────────────────────────────
+async function loadIpRanges(){
+  if(!_curSite)return;
+  const r=await fetch(`${SB_URL}/rest/v1/site_ip_ranges?site_id=eq.${_curSite.id}&order=created_at.asc`,{headers:H()});
+  const rows=r.ok?await r.json():[];
+  const el=q('ip-list');
+  const canM=_myRole==='admin';
+  if(!rows.length){el.innerHTML='<div class="empty" style="padding:20px">暂无 IP 段</div>';return;}
+  el.innerHTML=rows.map(r=>`
+    <div class="ip-row">
+      <span style="font-family:var(--mono);flex:1">${esc(r.ip_start)} → ${esc(r.ip_end)}</span>
+      <span style="font-size:11px;color:var(--t3)">${esc(r.note||'')}</span>
+      ${canM?`<button class="btn btn-r" style="font-size:11px;padding:3px 8px" onclick="delIpRange('${r.id}')">删除</button>`:''}
+    </div>`).join('');
+}
+
+async function addIpRange(){
+  const s=q('ip-s').value.trim(),e=q('ip-e').value.trim(),note=q('ip-note').value.trim();
+  if(!s||!e){alert('请填写起始和结束 IP');return;}
+  await fetch(`${SB_URL}/rest/v1/site_ip_ranges`,{
+    method:'POST',headers:{...H(),'Prefer':'return=minimal'},
+    body:JSON.stringify({id:crypto.randomUUID(),site_id:_curSite.id,ip_start:s,ip_end:e,note})});
+  closeM('m-add-ip');q('ip-s').value='';q('ip-e').value='';q('ip-note').value='';
+  loadIpRanges();
+}
+
+async function delIpRange(id){
+  if(!confirm('确认删除此 IP 段？'))return;
+  await fetch(`${SB_URL}/rest/v1/site_ip_ranges?id=eq.${id}`,{method:'DELETE',headers:H()});
+  loadIpRanges();
+}
+
+// ── MEMBERS ───────────────────────────────────────────────────────────────
+async function loadMembers(){
+  if(!_curSite)return;
+  const r=await fetch(`${SB_URL}/rest/v1/site_members?site_id=eq.${_curSite.id}&order=created_at.asc`,{headers:H()});
+  const rows=r.ok?await r.json():[];
+  const el=q('member-list');
+  const canM=_myRole==='admin';
+  const roles={admin:'管理员',operator:'运维',viewer:'只读'};
+  const rclr={admin:'tag-g',operator:'tag-b',viewer:'tag-a'};
+  let html=`<div class="ip-row"><span style="flex:1"><strong>${esc(_email)}</strong>（本账号）</span><span class="tag tag-g">管理员</span></div>`;
+  rows.forEach(m=>{
+    const role=m.role||'viewer';
+    html+=`<div class="ip-row">
+      <span style="flex:1">${esc(m.email)}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="tag ${rclr[role]||'tag-a'}">${roles[role]||role}</span>
+        ${canM?`<button class="btn btn-r" style="font-size:11px;padding:3px 8px" onclick="delMember('${m.id}')">移除</button>`:''}
+      </div>
+    </div>`;
+  });
+  if(!rows.length) html+='<div style="color:var(--t3);font-size:12px;text-align:center;padding:10px">暂无其他成员</div>';
+  el.innerHTML=html;
+}
+
+async function addMember(){
+  const email=q('m-email').value.trim(),role=q('m-role').value;
+  if(!email){alert('请填写邮箱');return;}
+  await fetch(`${SB_URL}/rest/v1/site_members`,{
+    method:'POST',headers:{...H(),'Prefer':'return=minimal'},
+    body:JSON.stringify({id:crypto.randomUUID(),site_id:_curSite.id,email,role,user_id:'00000000-0000-0000-0000-000000000000'})});
+  closeM('m-add-member');q('m-email').value='';
+  loadMembers();alert('成员已添加，请通知其在本系统注册账号后即可查看矿场');
+}
+
+async function delMember(id){
+  if(!confirm('确认移除此成员？'))return;
+  await fetch(`${SB_URL}/rest/v1/site_members?id=eq.${id}`,{method:'DELETE',headers:H()});
+  loadMembers();
+}
+
+// ── COMMANDS ──────────────────────────────────────────────────────────────
 async function sendCmd(box_ip,box_name,command,params={}){
-  try{
-    const r=await fetch(`${SB_URL}/rest/v1/device_commands`,{
-      method:'POST',headers:{...H(),'Prefer':'return=minimal'},
-      body:JSON.stringify({box_ip,box_name,command,params,operator:_email,status:'pending'})
-    });
-    if(r.ok||r.status===201){setTimeout(loadCmdLog,2000);return true;}
-  }catch(e){}
-  alert('发送指令失败');return false;
+  if(!_curSite)return;
+  await fetch(`${SB_URL}/rest/v1/device_commands`,{
+    method:'POST',headers:{...H(),'Prefer':'return=minimal'},
+    body:JSON.stringify({box_ip,box_name,command,params,operator:_email,status:'pending',site_id:_curSite.id})});
+  setTimeout(()=>{if(q('tc-cmdlog').classList.contains('on'))loadCmdLog();},2000);
 }
 
 function cfmAct(cmd,ip,name){
-  const cfg={
-    reboot:{title:'确认重启',msg:`即将重启矿机 ${name}（${ip}）\n矿机将停止运算约2~5分钟`,cls:'btn-amber',lbl:'确认重启'},
-    poweroff:{title:'确认关机',msg:`即将关闭矿机 ${name}（${ip}）\n关机后需手动开机才能恢复`,cls:'btn-red',lbl:'确认关机'}
-  }[cmd];
-  document.getElementById('cf-title').childNodes[0].textContent=cfg.title+' ';
-  document.getElementById('cf-msg').textContent=cfg.msg;
-  const ok=document.getElementById('cf-ok');ok.className=`btn ${cfg.cls}`;ok.textContent=cfg.lbl;
+  const cfg={reboot:{title:'确认重启',msg:`即将重启矿机 ${name}（${ip}）\n矿机将停止运算约 2~5 分钟`,cls:'btn-a',lbl:'确认重启'},
+             poweroff:{title:'确认关机',msg:`即将关闭矿机 ${name}（${ip}）\n关机后需手动开机`,cls:'btn-r',lbl:'确认关机'}}[cmd];
+  q('cf-title').textContent=cfg.title;q('cf-msg').textContent=cfg.msg;
+  const ok=q('cf-ok');ok.className=`btn ${cfg.cls}`;ok.textContent=cfg.lbl;
   ok.onclick=async()=>{closeM('m-confirm');await sendCmd(ip,name,cmd);};
   openM('m-confirm');
 }
 
-function openPool(ip,name,curUrl,curUser){
-  document.getElementById('p-box').value=`${name}（${ip}）`;
-  document.getElementById('p-url1').value=curUrl||'';document.getElementById('p-user1').value=curUser||'';
-  document.getElementById('p-pass1').value='';document.getElementById('p-url2').value='';document.getElementById('p-user2').value='';
-  document.getElementById('m-pool').dataset.ip=ip;document.getElementById('m-pool').dataset.name=name;
-  openM('m-pool');
+function openPoolCtrl(ip,name,curUrl,curUser){
+  q('p-box').value=`${name}（${ip}）`;q('p-url1').value=curUrl||'';q('p-user1').value=curUser||'';
+  ['p-pass1','p-url2','p-user2','p-pass2'].forEach(id=>q(id).value='');
+  q('m-pool').dataset.ip=ip;q('m-pool').dataset.name=name;openM('m-pool');
 }
 async function sendSetPool(){
-  const ip=document.getElementById('m-pool').dataset.ip,name=document.getElementById('m-pool').dataset.name;
-  const url1=document.getElementById('p-url1').value.trim(),user1=document.getElementById('p-user1').value.trim();
-  if(!url1||!user1){alert('请填写矿池1 URL和账号');return;}
+  const ip=q('m-pool').dataset.ip,name=q('m-pool').dataset.name;
+  const url1=q('p-url1').value.trim(),user1=q('p-user1').value.trim();
+  if(!url1||!user1){alert('请填写矿池 URL 和账号');return;}
   closeM('m-pool');
-  await sendCmd(ip,name,'set_pool',{pool1_url:url1,pool1_user:user1,pool1_pass:document.getElementById('p-pass1').value,pool2_url:document.getElementById('p-url2').value,pool2_user:document.getElementById('p-user2').value});
+  await sendCmd(ip,name,'set_pool',{pool1_url:url1,pool1_user:user1,pool1_pass:q('p-pass1').value,
+    pool2_url:q('p-url2').value,pool2_user:q('p-user2').value,pool2_pass:q('p-pass2').value});
 }
 
 function openPower(ip,name,curMode){
-  document.getElementById('pw-box').value=`${name}（${ip}）`;
-  document.getElementById('pw-mode').value=curMode||'';document.getElementById('pw-freq').value='';
-  document.getElementById('m-power').dataset.ip=ip;document.getElementById('m-power').dataset.name=name;
-  openM('m-power');
+  q('pw-box').value=`${name}（${ip}）`;q('pw-mode').value=curMode||'';q('pw-freq').value='';
+  q('m-power').dataset.ip=ip;q('m-power').dataset.name=name;openM('m-power');
 }
 async function sendSetPower(){
-  const ip=document.getElementById('m-power').dataset.ip,name=document.getElementById('m-power').dataset.name;
-  const mode=document.getElementById('pw-mode').value,freq=document.getElementById('pw-freq').value;
+  const ip=q('m-power').dataset.ip,name=q('m-power').dataset.name;
+  const mode=q('pw-mode').value,freq=q('pw-freq').value;
   if(!mode&&!freq){alert('请选择功耗模式或填写频率');return;}
   closeM('m-power');
   if(mode)await sendCmd(ip,name,'set_power_mode',{mode});
   if(freq)await sendCmd(ip,name,'set_freq',{freq:parseInt(freq)});
 }
 
+async function loadCmdLog(){
+  if(!_curSite)return;
+  const r=await fetch(`${SB_URL}/rest/v1/device_commands?site_id=eq.${_curSite.id}&order=created_at.desc&limit=50`,{headers:H()});
+  const rows=r.ok?await r.json():[];
+  const tb=q('ctbody');
+  if(!rows.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--t3);padding:20px">暂无记录</td></tr>';return;}
+  const CMDS={reboot:'重启',poweroff:'关机',set_pool:'切换矿池',set_power_mode:'功耗模式',set_freq:'频率',auto_restart:'自动重启'};
+  const STLBL={pending:'待执行',running:'执行中',done:'成功',error:'失败'};
+  tb.innerHTML=rows.map(r=>{
+    const ts=new Date(r.created_at).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const p=r.params?JSON.stringify(r.params):'—';
+    return `<tr>
+      <td style="font-family:var(--mono);font-size:10px;color:var(--t2);white-space:nowrap">${ts}</td>
+      <td><strong>${esc(r.box_name||r.box_ip)}</strong><br><span style="color:var(--t3);font-size:10px;font-family:var(--mono)">${esc(r.box_ip)}</span></td>
+      <td>${CMDS[r.command]||r.command}</td>
+      <td style="font-size:10px;color:var(--t2);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(p)}">${esc(p)}</td>
+      <td><span class="sbadge ${r.status}">${STLBL[r.status]||r.status}</span></td>
+      <td style="font-size:10px;color:var(--t2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.result||'—')}</td>
+      <td style="font-size:10px;color:var(--t3)">${esc(r.operator||'—')}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function fetchPrice(){
+  try{const r=await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');const d=await r.json();const el=q('h-price');if(el)el.textContent='$'+parseFloat(d.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}catch{}
+}
+
 function openM(id){document.getElementById(id).classList.add('on');}
 function closeM(id){document.getElementById(id).classList.remove('on');}
 window.addEventListener('click',e=>{if(e.target.classList.contains('mo'))e.target.classList.remove('on');});
-
-async function fetchPrice(){
-  try{const r=await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');const d=await r.json();const p=parseFloat(d.price);const el=document.getElementById('h-price');if(el)el.textContent='$'+p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}catch(e){}
-}
 </script>
 </body>
 </html>
